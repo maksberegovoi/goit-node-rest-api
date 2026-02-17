@@ -1,11 +1,53 @@
-import contactsService from "../services/contactsServices.js";
+import ContactsService from "../services/contactsServices.js";
+import {
+  createContactSchema,
+  updateContactSchema,
+} from "../schemas/contactsSchemas.js";
 
-export const getAllContacts = (req, res) => {};
+class ContactsController {
+  constructor() {
+    this.contactsService = new ContactsService();
+  }
 
-export const getOneContact = (req, res) => {};
+  getAllContacts = async (req, res) => {
+    const contacts = await this.contactsService.listContacts();
+    res.status(200).json(contacts);
+  };
 
-export const deleteContact = (req, res) => {};
+  getOneContact = async (req, res) => {
+    const { id } = req.params;
 
-export const createContact = (req, res) => {};
+    const contact = await this.contactsService.getContactById(id);
 
-export const updateContact = (req, res) => {};
+    res.status(200).json(contact);
+  };
+
+  deleteContact = async (req, res) => {
+    const { id } = req.params;
+
+    const contact = await this.contactsService.removeContact(id);
+
+    res.status(200).json(contact);
+  };
+
+  createContact = async (req, res) => {
+    const body = await createContactSchema.validateAsync(req.body);
+    const newContact = await this.contactsService.addContact(body);
+
+    res.status(201).json(newContact);
+  };
+
+  updateContact = async (req, res) => {
+    const { id } = req.params;
+    const body = await updateContactSchema.validateAsync(req.body);
+
+    const updatedContact = await this.contactsService.updateContact(
+      id,
+      body
+    );
+
+    res.status(200).json(updatedContact);
+  };
+}
+
+export const contactsController = new ContactsController();

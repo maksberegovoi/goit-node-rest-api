@@ -1,74 +1,72 @@
-import fs from "fs/promises";
-import path from "path";
-import { nanoid } from "nanoid";
-import { fileURLToPath } from "url";
-import ApiError from "../shared/http/errors/api-error.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const contactsPath = path.join(__dirname, "..", "db", "contacts.json");
-
-const readContacts = async () => {
-  const data = await fs.readFile(contactsPath, "utf-8");
-  return JSON.parse(data);
-};
-
-const writeContacts = async (contacts) => {
-  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
-};
+import { nanoid } from 'nanoid'
+import ApiError from '../shared/http/errors/api-error.js'
+import { Contact } from '../db/models/index.js'
 
 class ContactsService {
-  async listContacts() {
-    return await readContacts();
-  }
+    async listContacts() {
+        return await Contact.findAll()
+    }
 
-  async getContactById(id) {
-    const contacts = await readContacts();
-    const contact =  contacts.find(c => c.id === id)
+    async getContactById(id) {
+        const contact = await Contact.findOne({
+            where: { id }
+        })
 
-    if (!contact) throw ApiError.notFound('Not found')
-    return contact
-  }
+        if (!contact) throw ApiError.notFound('Not found')
+        return contact
+    }
 
-  async removeContact(id) {
-    const contacts = await readContacts();
-    const index = contacts.findIndex(c => c.id === id);
-    if (index === -1) throw ApiError.notFound('Not found')
+    async removeContact(id) {
+        const contact = await Contact.findOne({
+            where: { id }
+        })
+        if (!contact) throw ApiError.notFound('Contact not found')
 
-    const [removed] = contacts.splice(index, 1);
-    await writeContacts(contacts);
-    return removed;
-  }
+        await contact.destroy()
+        return { message: 'Contact successfully deleted' }
+    }
 
-  async addContact({ name, email, phone }) {
-    const contacts = await readContacts();
+    async addContact({ name, email, phone }) {
+        const existing = await Contact.findOne({
+            where: { email }
+        })
+        if (existing)
+            throw ApiError.badRequest(
+                'Contact with this email has already exist'
+            )
 
-    const newContact = {
-      id: nanoid(),
-      name,
-      email,
-      phone,
-    };
+        const contact = await Contact.create({
+            name,
+            email,
+            phone
+        })
 
-    const existing = contacts.find(c => c.email === email)
-    if (existing) throw ApiError.conflict('Contact with this email  has already exist')
+        return contact
+    }
 
-    contacts.push(newContact);
-    await writeContacts(contacts);
-    return newContact;
-  }
+    async updateContact(id, data) {
+        const contact = await Contact.findOne({
+            where: { id }
+        })
 
-  async updateContact(id, data) {
-    const contacts = await readContacts();
-    const index = contacts.findIndex(c => c.id === id);
-    if (index === -1) throw ApiError.notFound('Not found')
+        if (!contact) throw ApiError.notFound('Contact has not found')
+        await contact.update(data)
 
-    contacts[index] = { ...contacts[index], ...data };
-    await writeContacts(contacts);
+        return contact
+    }
 
-    return contacts[index];
-  }
+    async updateStatusContact(id, data) {
+        const contact = await Contact.findOne({
+            where: { id }
+        })
+
+        if (!contact) throw ApiError.notFound('Contact has not found')
+        await contact.update({
+            favorite: data.favorite
+        })
+
+        return contact
+    }
 }
 
-export default ContactsService;
+export default ContactsService

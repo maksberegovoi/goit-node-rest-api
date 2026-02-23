@@ -1,4 +1,3 @@
-import { nanoid } from 'nanoid'
 import ApiError from '../shared/http/errors/api-error.js'
 import { Contact } from '../db/models/index.js'
 

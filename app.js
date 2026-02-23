@@ -3,10 +3,10 @@ import 'express-async-errors'
 import express from 'express'
 import morgan from 'morgan'
 import cors from 'cors'
-import contactsRouter from './routes/contactsRouter.js'
 import ErrorHandlerMiddleware from './shared/http/middlewares/ErrorHandlerMiddleware.js'
 import { sequelize } from './db/db.js'
 import * as models from './db/models/index.js'
+import router from './routes/router.js'
 
 const app = express()
 
@@ -14,7 +14,7 @@ app.use(morgan('tiny'))
 app.use(cors())
 app.use(express.json())
 
-app.use('/api/contacts', contactsRouter)
+app.use('/api', router)
 
 app.use(ErrorHandlerMiddleware)
 

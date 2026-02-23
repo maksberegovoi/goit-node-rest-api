@@ -1,2 +1,14 @@
-export { Contact } from './Contact.js'
-export { User } from './User.js'
+import { User } from './User.js'
+import { Contact } from './Contact.js'
+
+User.hasMany(Contact, {
+    foreignKey: 'owner',
+    as: 'contacts'
+})
+
+Contact.belongsTo(User, {
+    foreignKey: 'owner',
+    as: 'user'
+})
+
+export { User, Contact }

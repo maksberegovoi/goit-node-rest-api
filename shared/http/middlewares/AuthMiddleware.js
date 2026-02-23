@@ -5,7 +5,6 @@ import { User } from '../../../db/models/index.js'
 export const AuthMiddleware = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization
-        console.log(authHeader)
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             throw ApiError.unauthorized()
         }

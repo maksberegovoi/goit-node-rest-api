@@ -1,5 +1,9 @@
 import AuthService from '../services/authService.js'
 import { loginSchema, registrationSchema } from '../schemas/authSchema.js'
+import path from 'path'
+import fs from 'fs/promises'
+
+const avatarsDir = path.resolve('public', 'avatars')
 
 class AuthController {
     constructor() {
@@ -37,6 +41,29 @@ class AuthController {
                 subscription
             }
         })
+    }
+
+    updateAvatar = async (req, res) => {
+        const { id } = req.user
+        const { path: tempUpload, originalname } = req.file
+
+        const filename = `${id}_${originalname}`
+        const resultUpload = path.resolve(avatarsDir, filename)
+
+        try {
+            await fs.rename(tempUpload, resultUpload)
+
+            const avatarURL = `/avatars/${filename}`
+
+            await this.authService.updateAvatar(id, avatarURL)
+
+            res.status(200).json({
+                avatarURL
+            })
+        } catch (error) {
+            await fs.unlink(tempUpload)
+            throw error
+        }
     }
 }
 

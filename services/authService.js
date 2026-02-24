@@ -3,6 +3,7 @@ import ApiError from '../shared/http/errors/api-error.js'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import apiError from '../shared/http/errors/api-error.js'
+import gravatar from 'gravatar'
 
 class AuthService {
     async registration(data) {
@@ -13,11 +14,18 @@ class AuthService {
         if (existing)
             throw ApiError.conflict('User with this email has already exist')
 
+        const avatarURL = gravatar.url(
+            email,
+            { s: '250', d: 'identicon' },
+            true
+        )
+
         const hashedPassword = await bcrypt.hash(password, 10)
         const user = await User.create({
             name,
             email,
-            password: hashedPassword
+            password: hashedPassword,
+            avatarURL
         })
 
         return {
@@ -62,6 +70,13 @@ class AuthService {
         await user.update({
             token: null
         })
+    }
+
+    async updateAvatar(userId, avatarURL) {
+        const user = await User.findByPk(userId)
+        if (!user) throw ApiError.unauthorized()
+
+        await user.update({ avatarURL })
     }
 }
 

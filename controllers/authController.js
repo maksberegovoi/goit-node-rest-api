@@ -1,5 +1,9 @@
 import AuthService from '../services/authService.js'
-import { loginSchema, registrationSchema } from '../schemas/authSchema.js'
+import {
+    emailSchema,
+    loginSchema,
+    registrationSchema
+} from '../schemas/authSchema.js'
 import path from 'path'
 import fs from 'fs/promises'
 
@@ -64,6 +68,22 @@ class AuthController {
             await fs.unlink(tempUpload)
             throw error
         }
+    }
+
+    verifyEmail = async (req, res) => {
+        const { verificationToken } = req.params
+        await this.authService.verifyEmail(verificationToken)
+
+        res.json({
+            message: 'Verification successful'
+        })
+    }
+
+    resendVerificationEmail = async (req, res) => {
+        const email = await emailSchema.validateAsync(req.body)
+        await this.authService.resendVerificationEmail(email)
+
+        res.json({ message: 'Verification email sent' })
     }
 }
 

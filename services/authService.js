@@ -4,6 +4,8 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import apiError from '../shared/http/errors/api-error.js'
 import gravatar from 'gravatar'
+import { nanoid } from 'nanoid'
+import { sendVerificationEmail } from '../utils/sendVerificationEmail.js'
 
 class AuthService {
     async registration(data) {
@@ -19,14 +21,17 @@ class AuthService {
             { s: '250', d: 'identicon' },
             true
         )
-
+        const verificationToken = nanoid()
         const hashedPassword = await bcrypt.hash(password, 10)
         const user = await User.create({
             name,
             email,
             password: hashedPassword,
-            avatarURL
+            avatarURL,
+            verificationToken
         })
+
+        await sendVerificationEmail(email, verificationToken)
 
         return {
             userId: user.id,
@@ -47,6 +52,10 @@ class AuthService {
         const validPassword = await bcrypt.compare(password, user.password)
         if (!validPassword)
             throw apiError.unauthorized('Incorrect email or password')
+
+        if (!user.verify) {
+            throw apiError.unauthorized('Email not verified')
+        }
 
         const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRES_IN
@@ -77,6 +86,36 @@ class AuthService {
         if (!user) throw ApiError.unauthorized()
 
         await user.update({ avatarURL })
+    }
+
+    async verifyEmail(verificationToken) {
+        const user = await User.findOne({
+            where: { verificationToken }
+        })
+
+        if (!user) {
+            throw apiError.notFound('User not found')
+        }
+
+        await user.update({
+            verify: true,
+            verificationToken: null
+        })
+    }
+
+    async resendVerificationEmail(email) {
+        const user = await User.findOne({
+            where: { email }
+        })
+
+        if (!user) {
+            throw apiError.notFound('User not found')
+        }
+        if (user.verify) {
+            throw apiError.badRequest('Verification has already been passed')
+        }
+
+        await sendVerificationEmail(email, user.verificationToken)
     }
 }
 

@@ -15,5 +15,7 @@ authRouter.patch(
     upload.single('avatar'),
     authController.updateAvatar
 )
+authRouter.get('/verify/:verificationToken', authController.verifyEmail)
+authRouter.post('/verify', authController.resendVerificationEmail)
 
 export default authRouter
